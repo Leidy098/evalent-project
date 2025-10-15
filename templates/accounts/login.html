@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar sesión · Evalent{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px;">
+  <div class="card p-4 shadow-sm">
+    <h2 class="mb-4 text-center">Iniciar sesión</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </form>
+    <p class="mt-3 text-center">
+      ¿No tienes cuenta?
+      <a href="/accounts/register/">Regístrate aquí</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

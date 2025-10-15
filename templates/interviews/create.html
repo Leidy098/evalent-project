@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Configurar nueva entrevista</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.interview_type.label_tag }} {{ form.interview_type }}
+        </div>
+        <div class="mb-3">
+            {{ form.language.label_tag }} {{ form.language }}
+        </div>
+        <div class="mb-3">
+            {{ form.level.label_tag }} {{ form.level }}
+        </div>
+        <div class="mb-3">
+            {{ form.position.label_tag }} {{ form.position }}
+        </div>
+        <div class="mb-3">
+            {{ form.mode.label_tag }} {{ form.mode }}
+        </div>
+        <div id="questions_field" class="mb-3">
+            {{ form.max_questions.label_tag }} {{ form.max_questions }}
+            <small class="text-muted">Número de preguntas en la entrevista</small>
+        </div>
+        <div id="time_field" class="mb-3" style="display:none;">
+            {{ form.time_limit.label_tag }} {{ form.time_limit }}
+            <small class="text-muted">Duración de la entrevista en minutos</small>
+        </div>
+        <button type="submit" class="btn btn-success">Iniciar entrevista</button>
+    </form>
+</div>
+
+<script>
+    const modeSelect = document.getElementById("id_mode");
+    const qField = document.getElementById("questions_field");
+    const tField = document.getElementById("time_field");
+
+    function toggleFields() {
+        if (modeSelect.value === "questions") {
+            qField.style.display = "block";
+            tField.style.display = "none";
+        } else {
+            qField.style.display = "none";
+            tField.style.display = "block";
+        }
+    }
+
+    modeSelect.addEventListener("change", toggleFields);
+    toggleFields(); // inicial
+</script>
+{% endblock %}

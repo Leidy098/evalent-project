@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Mis entrevistas</h2>
+    <a href="{% url 'interviews:interview_create' %}" class="btn btn-success mb-3">
+        ➕ Nueva entrevista
+    </a>
+
+    {% if interviews %}
+        <div class="row">
+            {% for interview in interviews %}
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ interview.position }}</h5>
+                            <p class="card-text">
+                                <strong>Tipo:</strong> {{ interview.get_interview_type_display }} <br>
+                                <strong>Nivel:</strong> {{ interview.get_level_display }} <br>
+                                <strong>Modo:</strong> {{ interview.get_mode_display }}
+                            </p>
+                            {% if interview.is_finished %}
+                                <a href="{% url 'interviews:interview_results' interview.pk %}" 
+                                   class="btn btn-outline-secondary btn-sm">Ver resultados</a>
+                            {% else %}
+                                <a href="{% url 'interviews:interview_detail' interview.pk %}" 
+                                   class="btn btn-primary btn-sm">Continuar</a>
+                            {% endif %}
+                            <a href="{% url 'interviews:interview_delete' interview.pk %}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('¿Seguro que deseas borrar esta entrevista?');">
+                               🗑 Borrar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No tienes entrevistas todavía.</p>
+    {% endif %}
+</div>
+{% endblock %}

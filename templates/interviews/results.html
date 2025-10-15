@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Resultados de la entrevista</h2>
+
+    <!-- 🔹 Resumen general -->
+    <div class="alert alert-info text-center">
+        <h3>Puntaje final: 
+            <span class="badge 
+                {% if puntaje >= 80 %}bg-success
+                {% elif puntaje >= 60 %}bg-primary
+                {% elif puntaje >= 40 %}bg-warning
+                {% else %}bg-danger{% endif %}">
+                {{ puntaje }}/100
+            </span>
+        </h3>
+        <p><strong>Nivel:</strong>
+            {% if puntaje >= 80 %} Excelente 👏 
+            {% elif puntaje >= 60 %} Bueno 💡
+            {% elif puntaje >= 40 %} Regular 🤔
+            {% else %} Débil ❗{% endif %}
+        </p>
+    </div>
+
+    <p><strong>Cargo:</strong> {{ interview.position }}</p>
+    <p><strong>Total de preguntas respondidas:</strong> {{ total_preguntas }}</p>
+
+    <hr>
+    <h4>Gráficos de desempeño</h4>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <canvas id="radarChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <canvas id="lineChart"></canvas>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <canvas id="barChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <canvas id="doughnutChart"></canvas>
+        </div>
+    </div>
+
+    <hr>
+    <h4>Consejos destacados</h4>
+    <ul class="list-group mb-4">
+        {% for msg in interview.messages.all %}
+            {% if msg.role == "feedback" %}
+                <li class="list-group-item">{{ msg.content }}</li>
+            {% endif %}
+        {% empty %}
+            <li class="list-group-item text-muted">No hubo consejos.</li>
+        {% endfor %}
+    </ul>
+
+    <!-- 🔹 Botones -->
+    <div class="text-center mt-4">
+        <a href="{% url 'interviews:interview_list' %}" class="btn btn-secondary me-2">
+            🔙 Volver al historial
+        </a>
+        <a href="{% url 'interviews:interview_export_pdf' interview.pk %}" 
+           class="btn btn-primary">
+            📄 Exportar resultados en PDF
+        </a>
+    </div>
+</div>
+
+<!-- ✅ Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- ✅ Pasamos datos como JSON seguro -->
+{{ promedio|json_script:"promedio-data" }}
+{{ comparativa|json_script:"comparativa-data" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const promedio = JSON.parse(document.getElementById("promedio-data").textContent);
+    const comparativa = JSON.parse(document.getElementById("comparativa-data").textContent);
+
+    // 🔹 Radar Chart
+    new Chart(document.getElementById('radarChart'), {
+        type: 'radar',
+        data: {
+            labels: ['Claridad', 'Confianza', 'Contenido', 'Creatividad', 'Lenguaje'],
+            datasets: [{
+                label: 'Tu desempeño',
+                data: [
+                    promedio.claridad || 0,
+                    promedio.confianza || 0,
+                    promedio.contenido || 0,
+                    promedio.creatividad || 0,
+                    promedio.lenguaje || 0
+                ],
+                backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                borderColor: '#0d6efd'
+            }]
+        },
+        options: { responsive: true, scales: { r: { suggestedMin: 0, suggestedMax: 100 } } }
+    });
+
+    // 🔹 Line Chart
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: ['Entrevista 1', 'Entrevista 2', 'Actual'],
+            datasets: [{
+                label: 'Comparativa de puntajes',
+                data: comparativa,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+    });
+
+    // 🔹 Bar Chart (criterios individuales)
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Claridad', 'Confianza', 'Contenido', 'Creatividad', 'Lenguaje'],
+            datasets: [{
+                label: 'Promedio por criterio',
+                data: [
+                    promedio.claridad || 0,
+                    promedio.confianza || 0,
+                    promedio.contenido || 0,
+                    promedio.creatividad || 0,
+                    promedio.lenguaje || 0
+                ],
+                backgroundColor: ['#0d6efd','#198754','#ffc107','#6f42c1','#fd7e14']
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+    });
+
+    // 🔹 Doughnut Chart (fortalezas vs debilidades)
+    const strengths = Object.values(promedio).filter(v => v >= 60).length;
+    const weaknesses = Object.values(promedio).filter(v => v < 60).length;
+    new Chart(document.getElementById('doughnutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Fortalezas', 'Debilidades'],
+            datasets: [{
+                data: [strengths, weaknesses],
+                backgroundColor: ['#198754', '#dc3545']
+            }]
+        },
+        options: { responsive: true }
+    });
+});
+</script>
+{% endblock %}

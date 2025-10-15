@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar sesión · Evalent{% endblock %}
+{% block content %}
+<div class="container-narrow">
+    <div class="card p-4">
+        <h2 class="mb-3">Iniciar sesión</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="btn btn-primary">Entrar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Entrevista finalizada</h2>
+    <p><strong>Cargo:</strong> {{ interview.position }}</p>
+    <p><strong>Tipo:</strong> {{ interview.get_interview_type_display }}</p>
+    <p><strong>Nivel:</strong> {{ interview.get_level_display }}</p>
+    <hr>
+
+    <p>La entrevista ha finalizado. Puedes ver tus <a href="{% url 'interviews:interview_results' interview.pk %}">resultados aquí</a>.</p>
+
+    <a href="{% url 'interviews:interview_list' %}" class="btn btn-secondary">Volver al historial</a>
+</div>
+{% endblock %}

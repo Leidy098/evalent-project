@@ -1,0 +1,40 @@
+body {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-family: "Inter", sans-serif;
+  }
+  
+  .navbar-brand {
+    font-size: 1.4rem;
+    color: #2563eb !important;
+  }
+  
+  .btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    border-radius: 10px;
+  }
+  
+  .btn-primary:hover {
+    background-color: #1d4ed8;
+  }
+  
+  .card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  
+  .container-narrow {
+    max-width: 800px;
+    margin: auto;
+  }
+  
+  footer {
+    color: #64748b;
+    padding: 2rem 0;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    background-color: white;
+  }
+  
