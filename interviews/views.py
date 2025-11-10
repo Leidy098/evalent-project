@@ -1,19 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
 from .models import Interview, Message, Score
 from .forms import InterviewForm
 from ai_agent.service import generate_ai_response
-from django.http import HttpResponse
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from io import BytesIO
+import json
+import base64
 
-from reports.utils import compute_scores, plot_promedios, plot_comparativa
+from reports.utils import compute_scores, plot_promedios, plot_comparativa, plot_radar, plot_pie_strengths
 
 
 @login_required
@@ -116,6 +113,110 @@ def interview_detail(request, pk):
 
 
 @login_required
+@csrf_exempt
+def transcribe_audio(request, pk):
+    """Endpoint para transcribir audio"""
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    
+    try:
+        interview = get_object_or_404(Interview, pk=pk, user=request.user)
+        data = json.loads(request.body)
+        audio_base64 = data.get("audio")
+        
+        if not audio_base64:
+            return JsonResponse({"error": "No se recibió audio"}, status=400)
+        
+        from ai_agent.voice_utils import transcribe_audio as transcribe
+        
+        transcribed_text = transcribe(audio_base64)
+        
+        if transcribed_text:
+            return JsonResponse({"text": transcribed_text})
+        else:
+            return JsonResponse({"error": "Error al transcribir"}, status=500)
+            
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def generate_voice_response(request, pk):
+    """Endpoint para generar respuesta con voz"""
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido"}, status=405)
+    
+    try:
+        interview = get_object_or_404(Interview, pk=pk, user=request.user)
+        data = json.loads(request.body)
+        user_message = data.get("message", "")
+        
+        if user_message:
+            Message.objects.create(interview=interview, role="user", content=user_message)
+        
+        result = generate_ai_response(interview, user_message)
+        question = result.get("question")
+        feedback = result.get("feedback")
+        scores = result.get("scores")
+        
+        ai_msg_id = None
+        if question:
+            ai_msg = Message.objects.create(interview=interview, role="ai", content=question)
+            ai_msg_id = ai_msg.id
+            if scores:
+                Score.objects.create(
+                    message=ai_msg,
+                    claridad=scores.get("claridad", 0),
+                    confianza=scores.get("confianza", 0),
+                    contenido=scores.get("contenido", 0),
+                    creatividad=scores.get("creatividad", 0),
+                    lenguaje=scores.get("lenguaje", 0),
+                )
+        
+        if feedback:
+            Message.objects.create(interview=interview, role="feedback", content=feedback)
+        
+        interview.asked_questions += 1
+        
+        should_finish = False
+        if interview.mode == "questions" and interview.max_questions:
+            if interview.asked_questions >= interview.max_questions:
+                should_finish = True
+        elif interview.mode == "time" and interview.time_limit:
+            elapsed = (timezone.now() - interview.created_at).total_seconds() / 60
+            if elapsed >= interview.time_limit:
+                should_finish = True
+        
+        if should_finish:
+            interview.is_finished = True
+        
+        interview.save()
+        
+        audio_base64 = None
+        try:
+            from ai_agent.voice_utils import text_to_speech_edge_tts
+            if question:
+                audio_bytes = text_to_speech_edge_tts(question, interview.language)
+                if audio_bytes:
+                    audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        except Exception as e:
+            print(f"Error generando audio: {e}")
+        
+        return JsonResponse({
+            "question": question,
+            "feedback": feedback,
+            "scores": scores,
+            "audio": audio_base64,
+            "is_finished": should_finish,
+            "message_id": ai_msg_id
+        })
+        
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
 def interview_finish(request, pk):
     interview = get_object_or_404(Interview, pk=pk, user=request.user)
     interview.is_finished = True
@@ -162,50 +263,30 @@ def interview_results(request, pk):
 @login_required
 def interview_export_pdf(request, pk):
     from io import BytesIO
-    from django.http import HttpResponse
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
-    )
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from datetime import datetime
-    from reports.utils import compute_scores, plot_promedios, plot_comparativa
 
-    # Datos base
     interview = get_object_or_404(Interview, pk=pk, user=request.user)
     promedio, puntaje, comparativa = compute_scores(interview)
     png_promedios = plot_promedios(promedio)
     png_comp = plot_comparativa(comparativa)
 
-    # Crear PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        leftMargin=50,
-        rightMargin=50,
-        topMargin=70,
-        bottomMargin=60,
-    )
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=50, rightMargin=50, topMargin=70, bottomMargin=60)
     styles = getSampleStyleSheet()
     Story = []
 
-    # 🔹 Título principal
     Story.append(Paragraph("<b>Reporte de Entrevista – Evalent</b>", styles["Title"]))
     Story.append(Spacer(1, 10))
 
-    # 🔹 Línea divisoria
     line = Table([[""]], colWidths=[450])
-    line.setStyle(
-        TableStyle(
-            [("LINEBELOW", (0, 0), (-1, -1), 2, colors.HexColor("#0d6efd"))]
-        )
-    )
+    line.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 2, colors.HexColor("#0d6efd"))]))
     Story.append(line)
     Story.append(Spacer(1, 12))
 
-    # 🔹 Información general
     meta = f"""
     <b>Usuario:</b> {request.user.username}<br/>
     <b>Cargo:</b> {interview.position}<br/>
@@ -220,27 +301,19 @@ def interview_export_pdf(request, pk):
     Story.append(Paragraph(meta, styles["Normal"]))
     Story.append(Spacer(1, 20))
 
-    # 🔹 Tabla de resultados
-    data = [["Criterio", "Puntaje"]] + [
-        [k.capitalize(), f"{v:.1f}"] for k, v in promedio.items()
-    ]
+    data = [["Criterio", "Puntaje"]] + [[k.capitalize(), f"{v:.1f}"] for k, v in promedio.items()]
     table = Table(data, hAlign="LEFT", colWidths=[200, 80])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0d6efd")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                ("ALIGN", (1, 1), (1, -1), "RIGHT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-            ]
-        )
-    )
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0d6efd")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+    ]))
     Story.append(table)
     Story.append(Spacer(1, 20))
 
-    # 🔹 Gráficos
     Story.append(Paragraph("<b>Gráfico 1:</b> Promedio por criterio", styles["Heading3"]))
     Story.append(Image(png_promedios, width=400, height=250))
     Story.append(Spacer(1, 16))
@@ -248,17 +321,7 @@ def interview_export_pdf(request, pk):
     Story.append(Paragraph("<b>Gráfico 2:</b> Comparativa de desempeño", styles["Heading3"]))
     Story.append(Image(png_comp, width=400, height=250))
     Story.append(Spacer(1, 20))
-    
-    from reports.utils import (
-    compute_scores,
-    plot_promedios,
-    plot_comparativa,
-    plot_radar,
-    plot_pie_strengths,
-)
 
-    # ...
-    # Después de los dos primeros gráficos
     Story.append(Paragraph("<b>Gráfico 3:</b> Radar de Desempeño", styles["Heading3"]))
     Story.append(Image(plot_radar(promedio), width=400, height=350))
     Story.append(Spacer(1, 20))
@@ -267,8 +330,6 @@ def interview_export_pdf(request, pk):
     Story.append(Image(plot_pie_strengths(promedio), width=400, height=300))
     Story.append(Spacer(1, 20))
 
-
-    # 🔹 Consejos de la IA
     Story.append(PageBreak())
     Story.append(Paragraph("<b>Consejos destacados de la IA</b>", styles["Heading2"]))
     Story.append(Spacer(1, 12))
@@ -281,21 +342,17 @@ def interview_export_pdf(request, pk):
     else:
         Story.append(Paragraph("No se generaron consejos en esta entrevista.", styles["Italic"]))
 
-    # 🔹 Pie de página
     Story.append(Spacer(1, 30))
-    Story.append(
-        Paragraph(
-            f"<b>Generado por Evalent</b> — {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/>"
-            "Simulador de entrevistas con IA.",
-            ParagraphStyle("footer", fontSize=9, textColor=colors.grey),
-        )
-    )
+    Story.append(Paragraph(
+        f"<b>Generado por Evalent</b> — {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/>"
+        "Simulador de entrevistas con IA.",
+        ParagraphStyle("footer", fontSize=9, textColor=colors.grey),
+    ))
 
-    # Construir PDF
     doc.build(Story)
     pdf_value = buffer.getvalue()
     buffer.close()
 
     response = HttpResponse(pdf_value, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=\"reporte_entrevista_{interview.pk}.pdf\"'
+    response["Content-Disposition"] = f'attachment; filename="reporte_entrevista_{interview.pk}.pdf"'
     return response

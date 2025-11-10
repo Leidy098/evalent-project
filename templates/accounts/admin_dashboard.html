@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Panel de Administración · Evalent{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📊 Panel de Administración</h2>
+        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">← Volver al perfil</a>
+    </div>
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">👥 Usuarios</h5>
+                    <h2 class="mb-0">{{ total_users }}</h2>
+                    <p class="mb-0"><small>Total registrados</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">📋 Entrevistas</h5>
+                    <h2 class="mb-0">{{ total_interviews }}</h2>
+                    <p class="mb-0"><small>Total creadas</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">✅ Finalizadas</h5>
+                    <h2 class="mb-0">{{ finished_interviews }}</h2>
+                    <p class="mb-0"><small>Completadas</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">⏳ Activas</h5>
+                    <h2 class="mb-0">{{ active_interviews }}</h2>
+                    <p class="mb-0"><small>En progreso</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de navegación -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Ver todas las entrevistas</h5>
+                    <p class="text-muted">Accede a la lista completa de entrevistas de todos los usuarios</p>
+                    <a href="{% url 'accounts:admin_interviews' %}" class="btn btn-primary">
+                        📋 Ver entrevistas
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Gestionar usuarios</h5>
+                    <p class="text-muted">Ve la lista de todos los usuarios registrados</p>
+                    <a href="{% url 'accounts:admin_users' %}" class="btn btn-primary">
+                        👥 Ver usuarios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entrevistas recientes -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">📌 Entrevistas recientes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Cargo</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interview in recent_interviews %}
+                        <tr>
+                            <td><strong>{{ interview.user.username }}</strong></td>
+                            <td>{{ interview.position }}</td>
+                            <td>{{ interview.get_interview_type_display }}</td>
+                            <td>
+                                {% if interview.is_finished %}
+                                    <span class="badge bg-success">✅ Finalizada</span>
+                                {% else %}
+                                    <span class="badge bg-warning">⏳ En progreso</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ interview.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'interviews:interview_results' interview.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                No hay entrevistas todavía
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
