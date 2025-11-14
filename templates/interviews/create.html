@@ -1,37 +1,137 @@
 {% extends "base.html" %}
+{% load static %}
+{% block title %}Nueva Entrevista · Evalent{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Configurar nueva entrevista</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            {{ form.interview_type.label_tag }} {{ form.interview_type }}
+<div class="container mt-4 container-narrow">
+    <div class="card shadow-lg">
+        <div class="card-header">
+            <div class="d-flex align-items-center">
+                <span style="font-size: 2rem;" class="me-3">➕</span>
+                <div>
+                    <h3 class="mb-0 fw-bold">Configurar Nueva Entrevista</h3>
+                    <p class="text-white-50 mb-0 small">Personaliza tu sesión de práctica</p>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.language.label_tag }} {{ form.language }}
+        <div class="card-body">
+            <form method="post" id="interview-form">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_interview_type" class="form-label fw-bold">
+                            <span class="me-1">🎯</span> Tipo de entrevista
+                        </label>
+                        {{ form.interview_type }}
+                        <small class="text-muted d-block mt-1">
+                            Selecciona el contexto de tu entrevista
+                        </small>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="id_language" class="form-label fw-bold">
+                            <span class="me-1">🌐</span> Idioma
+                        </label>
+                        {{ form.language }}
+                        <small class="text-muted d-block mt-1">
+                            Idioma de la conversación
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_level" class="form-label fw-bold">
+                            <span class="me-1">📊</span> Nivel
+                        </label>
+                        {{ form.level }}
+                        <small class="text-muted d-block mt-1">
+                            Dificultad de las preguntas
+                        </small>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="id_position" class="form-label fw-bold">
+                            <span class="me-1">💼</span> Cargo / Posición
+                        </label>
+                        {{ form.position }}
+                        <small class="text-muted d-block mt-1">
+                            Ej: Desarrollador Python, Analista de Datos
+                        </small>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h5 class="fw-bold mb-3">
+                    <span class="me-1">⏱️</span> Configuración de duración
+                </h5>
+                
+                <div class="mb-3">
+                    <label for="id_mode" class="form-label fw-bold">Modo de finalización</label>
+                    {{ form.mode }}
+                    <small class="text-muted d-block mt-1">
+                        Elige cómo quieres finalizar la entrevista
+                    </small>
+                </div>
+                
+                <div id="questions_field" class="mb-3">
+                    <label for="id_max_questions" class="form-label fw-bold">
+                        <span class="me-1">🔢</span> Número de preguntas
+                    </label>
+                    {{ form.max_questions }}
+                    <small class="text-muted d-block mt-1">
+                        Cantidad de preguntas en la entrevista
+                    </small>
+                </div>
+                
+                <div id="time_field" class="mb-3" style="display:none;">
+                    <label for="id_time_limit" class="form-label fw-bold">
+                        <span class="me-1">⏰</span> Duración en minutos
+                    </label>
+                    {{ form.time_limit }}
+                    <small class="text-muted d-block mt-1">
+                        Tiempo límite para la entrevista
+                    </small>
+                </div>
+                
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <strong>❌ Errores en el formulario:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success flex-fill fw-bold">
+                        🚀 Iniciar entrevista
+                    </button>
+                    <a href="{% url 'interviews:interview_list' %}" class="btn btn-outline-secondary">
+                        ← Cancelar
+                    </a>
+                </div>
+            </form>
+            
+            <div class="mt-4 p-3 bg-light rounded">
+                <h6 class="fw-bold text-primary mb-2">💡 Consejo</h6>
+                <p class="small text-muted mb-0">
+                    Te recomendamos comenzar con 5 preguntas en modo Junior si es tu primera vez. 
+                    Podrás aumentar la dificultad en sesiones posteriores.
+                </p>
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.level.label_tag }} {{ form.level }}
-        </div>
-        <div class="mb-3">
-            {{ form.position.label_tag }} {{ form.position }}
-        </div>
-        <div class="mb-3">
-            {{ form.mode.label_tag }} {{ form.mode }}
-        </div>
-        <div id="questions_field" class="mb-3">
-            {{ form.max_questions.label_tag }} {{ form.max_questions }}
-            <small class="text-muted">Número de preguntas en la entrevista</small>
-        </div>
-        <div id="time_field" class="mb-3" style="display:none;">
-            {{ form.time_limit.label_tag }} {{ form.time_limit }}
-            <small class="text-muted">Duración de la entrevista en minutos</small>
-        </div>
-        <button type="submit" class="btn btn-success">Iniciar entrevista</button>
-    </form>
+    </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
     const modeSelect = document.getElementById("id_mode");
     const qField = document.getElementById("questions_field");

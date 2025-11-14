@@ -1,43 +1,111 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Perfil · Evalent{% endblock %}
 
 {% block content %}
 <div class="container mt-4 container-narrow">
-  <div class="card">
+  <div class="card shadow-lg">
     <div class="card-header">
-      <h3 class="mb-0">👤 Perfil de usuario</h3>
+      <div class="d-flex align-items-center">
+        <div class="me-3" style="font-size: 3rem;">👤</div>
+        <div>
+          <h3 class="mb-0 fw-bold">Mi Perfil</h3>
+          <p class="text-white-50 mb-0 small">Bienvenido a tu espacio personal</p>
+        </div>
+      </div>
     </div>
     <div class="card-body">
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <label class="text-muted">Usuario</label>
-          <p class="h5">{{ user.username }}</p>
+      <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+          <div class="p-3 bg-light rounded">
+            <label class="text-muted small fw-bold mb-1">USUARIO</label>
+            <p class="h5 mb-0 fw-bold text-primary">{{ user.username }}</p>
+          </div>
         </div>
-        <div class="col-md-6">
-          <label class="text-muted">Email</label>
-          <p class="h5">{{ user.email }}</p>
+        <div class="col-md-6 mb-3">
+          <div class="p-3 bg-light rounded">
+            <label class="text-muted small fw-bold mb-1">EMAIL</label>
+            <p class="h5 mb-0">{{ user.email }}</p>
+          </div>
         </div>
       </div>
 
-      <hr>
+      {% if user.profile %}
+      <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+          <div class="p-3 bg-light rounded">
+            <label class="text-muted small fw-bold mb-1">ROL</label>
+            <p class="h5 mb-0">
+              {% if user.profile.role == 'recruiter' %}
+                <span class="badge bg-warning">🔐 Reclutador</span>
+              {% else %}
+                <span class="badge bg-primary">👤 Candidato</span>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="p-3 bg-light rounded">
+            <label class="text-muted small fw-bold mb-1">NIVEL DE EXPERIENCIA</label>
+            <p class="h5 mb-0">{{ user.profile.experience_level|default:"No especificado" }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
-      <div class="d-flex gap-2 flex-wrap">
-        <a href="{% url 'interviews:interview_create' %}" class="btn btn-success">
-          ➕ Nueva entrevista
-        </a>
-        <a href="{% url 'interviews:interview_list' %}" class="btn btn-primary">
-          📋 Ver mis entrevistas
-        </a>
+      <hr class="my-4">
+
+      <h5 class="fw-bold mb-3">Acciones rápidas</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <a href="{% url 'interviews:interview_create' %}" class="btn btn-success w-100 d-flex align-items-center justify-content-center">
+            <span style="font-size: 1.5rem;" class="me-2">➕</span>
+            <div class="text-start">
+              <div class="fw-bold">Nueva entrevista</div>
+              <small>Comienza una nueva práctica</small>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-6">
+          <a href="{% url 'interviews:interview_list' %}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+            <span style="font-size: 1.5rem;" class="me-2">📋</span>
+            <div class="text-start">
+              <div class="fw-bold">Mis entrevistas</div>
+              <small>Ver historial completo</small>
+            </div>
+          </a>
+        </div>
         
         {% if user.is_superuser or user.profile.role == 'recruiter' %}
-        <a href="{% url 'accounts:admin_dashboard' %}" class="btn btn-warning">
-          🔐 Panel Administrador
-        </a>
+        <div class="col-md-6">
+          <a href="{% url 'accounts:admin_dashboard' %}" class="btn btn-warning w-100 d-flex align-items-center justify-content-center">
+            <span style="font-size: 1.5rem;" class="me-2">🔐</span>
+            <div class="text-start">
+              <div class="fw-bold">Panel Admin</div>
+              <small>Gestión de usuarios y datos</small>
+            </div>
+          </a>
+        </div>
         {% endif %}
         
-        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger">
-          🚪 Cerrar sesión
-        </a>
+        <div class="col-md-6">
+          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center">
+            <span style="font-size: 1.5rem;" class="me-2">🚪</span>
+            <div class="text-start">
+              <div class="fw-bold">Cerrar sesión</div>
+              <small>Salir de forma segura</small>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="mt-4 p-3 bg-light rounded">
+        <h6 class="fw-bold text-primary mb-2">💡 Consejo</h6>
+        <p class="small text-muted mb-0">
+          Practica regularmente para mejorar tus habilidades de entrevista. 
+          Cada sesión te brinda feedback personalizado para que puedas identificar 
+          áreas de mejora y fortalecer tus puntos fuertes.
+        </p>
       </div>
     </div>
   </div>

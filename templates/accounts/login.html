@@ -1,19 +1,52 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Iniciar sesión · Evalent{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 500px;">
-  <div class="card p-4 shadow-sm">
-    <h2 class="mb-4 text-center">Iniciar sesión</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-primary w-100">Entrar</button>
-    </form>
-    <p class="mt-3 text-center">
-      ¿No tienes cuenta?
-      <a href="/accounts/register/">Regístrate aquí</a>
-    </p>
+  <div class="card shadow-lg">
+    <div class="card-header text-center">
+      <img src="{% static 'img/imagen__6_.jpeg' %}" alt="Magneto" height="50" class="mb-2">
+      <h3 class="mb-0 fw-bold">Iniciar sesión</h3>
+    </div>
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          <label for="id_username" class="form-label fw-bold">Usuario</label>
+          <input type="text" name="username" class="form-control" id="id_username" 
+                 placeholder="Ingresa tu usuario" required>
+        </div>
+        
+        <div class="mb-3">
+          <label for="id_password" class="form-label fw-bold">Contraseña</label>
+          <input type="password" name="password" class="form-control" id="id_password" 
+                 placeholder="Ingresa tu contraseña" required>
+        </div>
+        
+        {% if form.errors %}
+        <div class="alert alert-danger">
+          <strong>Error:</strong> Usuario o contraseña incorrectos.
+        </div>
+        {% endif %}
+        
+        <button type="submit" class="btn btn-primary w-100 fw-bold">
+          🔐 Entrar
+        </button>
+      </form>
+      
+      <hr class="my-4">
+      
+      <p class="text-center mb-0">
+        ¿No tienes cuenta?
+        <a href="{% url 'accounts:register' %}" class="fw-bold">Regístrate aquí</a>
+      </p>
+    </div>
+  </div>
+  
+  <div class="text-center mt-3">
+    <a href="/" class="text-muted">← Volver al inicio</a>
   </div>
 </div>
 {% endblock %}
